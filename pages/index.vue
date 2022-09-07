@@ -81,7 +81,26 @@
 </template>
 
 <script>
+import healthService from '@/services/health'
 export default {
   name: 'IndexPage',
+  components: {},
+  data() {
+    return {
+      health: '',
+    }
+  },
+  async created() {
+    await this.getNews()
+  },
+  methods: {
+    async getNews() {
+      const res = await healthService.getHealth()
+      this.$set(this, 'health', res.message)
+      console.log(this.health)
+    },
+  },
 }
+
+
 </script>
