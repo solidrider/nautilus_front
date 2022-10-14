@@ -24,7 +24,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [{ src: '@/plugins/axios.js', ssr: false },],
+  plugins: [{ src: '@/plugins/axios.js', ssr: false }],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -44,6 +44,7 @@ export default {
     '@nuxtjs/axios',
     '@nuxtjs/dotenv',
     'nuxt-svg-loader',
+    // '@nuxtjs/composition-api/module',
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
@@ -56,6 +57,7 @@ export default {
   axios: {
     proxy: true,
     baseURL: 'http://localhost:8080/api/',
+    // prefix: '/api',
   },
   proxy: {
     '/api/': {
