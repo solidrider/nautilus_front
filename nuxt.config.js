@@ -1,4 +1,4 @@
-import colors from 'vuetify/es5/util/colors'
+import colors from 'vuetify/es5/util/colors';
 
 export default {
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
@@ -36,6 +36,7 @@ export default {
     // https://go.nuxtjs.dev/vuetify
     '@nuxtjs/vuetify',
     '@nuxtjs/moment',
+    // '@nuxtjs/composition-api/module',
   ],
 
   // Modules: https://go.nuxtjs.dev/config-modules
@@ -44,7 +45,6 @@ export default {
     '@nuxtjs/axios',
     '@nuxtjs/dotenv',
     'nuxt-svg-loader',
-    // '@nuxtjs/composition-api/module',
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
@@ -88,4 +88,4 @@ export default {
   env: {
     NODE_ENV: process.env.NODE_ENV,
   },
-}
+};
