@@ -45,7 +45,45 @@
       <v-container fluid>
         <div>
           <div id="map"></div>
-          <!-- <div><button @click="addGeoJsonSource('jinko_clone')">表示</button></div> -->
+          <div class="map-overlay bottom">
+            <v-card v-show="isRanking">
+              <v-container fluid>
+                <v-row align="center">
+                  <v-col cols="12">
+                    <v-select
+                      :items="items"
+                      label="レイヤー名"
+                      @change="selectTableData"
+                    >
+                    </v-select>
+                  </v-col>
+                </v-row>
+              </v-container>
+              <v-spacer></v-spacer>
+              <v-data-table
+                v-show="isTable"
+                :headers="headers"
+                :items="selectedPropertyData"
+                :items-per-page="5"
+                :sort-by="['rank']"
+                class="elevation-1"
+              ></v-data-table>
+              <v-data-table
+                v-show="isTotalTable"
+                :headers="totalHeaders"
+                :items="totalRankingData"
+                :items-per-page="5"
+                :sort-by="['rank']"
+                class="elevation-1"
+              ></v-data-table>
+            </v-card>
+            <v-btn v-show="isRankingBtn" @click="showRanking()"
+              >ランキング表示</v-btn
+            >
+            <v-btn v-show="!isRankingBtn" @click="hideRanking()"
+              >ランキング非表示</v-btn
+            >
+          </div>
         </div>
       </v-container>
     </v-main>
@@ -76,6 +114,30 @@ export default {
   //   components: {},
   data() {
     return {
+      isTable: false,
+      isTotalTable: false,
+      isRanking: false,
+      isRankingBtn: true,
+      items: [],
+      headers: [
+        {
+          text: '都道府県',
+          align: 'start',
+          sortable: true,
+          value: 'name',
+        },
+        { text: '順位', value: 'rank' },
+        { text: '値', value: 'value' },
+      ],
+      totalHeaders: [
+        {
+          text: '都道府県',
+          align: 'start',
+          sortable: true,
+          value: 'name',
+        },
+        { text: '平均順位', value: 'rank' },
+      ],
       access_token:
         'pk.eyJ1Ijoiay1vbmlzaGkiLCJhIjoiY2w3cXllangwMGEwMjQwazFiZjBhOW11bSJ9.53Q8b_WN97zEviMsm6DmCQ',
       user: '',
@@ -83,17 +145,6 @@ export default {
       aichi: {},
       bunkazai: {},
       layers: {},
-      paintColor: [
-        { color: '#a1dab4', active: false },
-        { color: '#41b6c4', active: false },
-        { color: '#2c7fb8', active: false },
-        { color: '#253494', active: false },
-        { color: '#fed976', active: false },
-        { color: '#feb24c', active: false },
-        { color: '#fd8d3c', active: false },
-        { color: '#f03b20', active: false },
-        { color: '#bd0026', active: false },
-      ],
       is_reverse: [],
       opacity: [],
       check: [],
@@ -107,6 +158,57 @@ export default {
       selectedLayers: [],
       selectedLayersTitle: [],
       attributeData: [],
+      propertyData: {},
+      selectedPropertyData: [],
+      totalRankingData: [
+        { name: '北海道', rank: 0 },
+        { name: '青森県', rank: 0 },
+        { name: '岩手県', rank: 0 },
+        { name: '宮城県', rank: 0 },
+        { name: '秋田県', rank: 0 },
+        { name: '山形県', rank: 0 },
+        { name: '福島県', rank: 0 },
+        { name: '茨城県', rank: 0 },
+        { name: '栃木県', rank: 0 },
+        { name: '群馬県', rank: 0 },
+        { name: '埼玉県', rank: 0 },
+        { name: '千葉県', rank: 0 },
+        { name: '東京都', rank: 0 },
+        { name: '神奈川県', rank: 0 },
+        { name: '新潟県', rank: 0 },
+        { name: '富山県', rank: 0 },
+        { name: '石川県', rank: 0 },
+        { name: '福井県', rank: 0 },
+        { name: '山梨県', rank: 0 },
+        { name: '長野県', rank: 0 },
+        { name: '岐阜県', rank: 0 },
+        { name: '静岡県', rank: 0 },
+        { name: '愛知県', rank: 0 },
+        { name: '三重県', rank: 0 },
+        { name: '滋賀県', rank: 0 },
+        { name: '京都府', rank: 0 },
+        { name: '大阪府', rank: 0 },
+        { name: '兵庫県', rank: 0 },
+        { name: '奈良県', rank: 0 },
+        { name: '和歌山県', rank: 0 },
+        { name: '鳥取県', rank: 0 },
+        { name: '島根県', rank: 0 },
+        { name: '岡山県', rank: 0 },
+        { name: '広島県', rank: 0 },
+        { name: '山口県', rank: 0 },
+        { name: '徳島県', rank: 0 },
+        { name: '香川県', rank: 0 },
+        { name: '愛媛県', rank: 0 },
+        { name: '高知県', rank: 0 },
+        { name: '福岡県', rank: 0 },
+        { name: '佐賀県', rank: 0 },
+        { name: '長崎県', rank: 0 },
+        { name: '熊本県', rank: 0 },
+        { name: '大分県', rank: 0 },
+        { name: '宮崎県', rank: 0 },
+        { name: '鹿児島県', rank: 0 },
+        { name: '沖縄県', rank: 0 },
+      ],
     };
   },
   async mounted() {
@@ -124,6 +226,10 @@ export default {
       if (stateDataLayer === undefined) {
         const request = layer.table_name;
         const response = await this.getGeoJsonData(request);
+        const properties = response.features.map(feature => {
+          return feature.properties;
+        });
+        this.propertyData[layer.title] = properties;
         //   // Add a data source containing GeoJSON data.
         this.map.addSource(layer.table_name, {
           type: 'geojson',
@@ -137,17 +243,22 @@ export default {
         this.layers[i].isSelected = true;
       } else {
         // 一度取得しているデータは表示・非表示を切り替える
-        this.changeLayerVisibility(layer);
-        this.layers[i].isSelected = false;
+        this.changeLayerVisibility(layer, false);
+        this.layers[i].isSelected = !this.layers[i].isSelected;
       }
     },
     addReverseGeoJsonSource(layer, i, is_reverse) {
       const stateDataLayer = this.map.getLayer(layer.table_name);
-      if (stateDataLayer !== undefined) {
+      const stateReverseDataLayer = this.map.getLayer(
+        layer.table_name + 'reverse'
+      );
+      if (stateDataLayer !== undefined && stateReverseDataLayer === undefined) {
         this.layers[i].isSelected = true;
-        this.changeLayerVisibility(layer);
-        this.layers[i].isSelected = false;
+        this.changeLayerVisibility(layer, false);
         this.paintPolygonLayer(layer, is_reverse);
+      } else if (stateReverseDataLayer !== undefined) {
+        this.changeLayerVisibility(layer, true);
+        this.changeLayerVisibility(layer, false);
       }
     },
     createMap() {
@@ -155,8 +266,8 @@ export default {
       this.map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v10',
-        center: [137.15057373046875, 35.0918216511155],
-        zoom: 10,
+        center: [137.15057373046875, 38.0918216511155],
+        zoom: 4.5,
       });
       const allLayers = [];
       this.layers.map(e => {
@@ -164,25 +275,26 @@ export default {
       });
       this.map.on('click', allLayers, async e => {
         this.selectedLayers = [];
-        // eslint-disable-next-line array-callback-return
-        this.layers.map(e => {
+        this.selectedLayersTitle = [];
+        this.layers.forEach(e => {
           if (e.isSelected === true) {
             this.selectedLayers.push(e.table_name);
             this.selectedLayersTitle.push(e.title);
           }
-          this.selectedLayers = Array.from(new Set(this.selectedLayers));
-          this.selectedLayersTitle = Array.from(
-            new Set(this.selectedLayersTitle)
-          );
         });
-        console.log(this.selectedLayers);
         const res = await mapService.getAttributeData({
           lngLat: e.lngLat,
           layer: this.selectedLayers,
         });
         const description = res.map((e, index) => {
           const description =
-            this.selectedLayersTitle[index] + ':' + e.rows[0].value + '<br>';
+            this.selectedLayersTitle[index] +
+            ':' +
+            e.rows[0].value +
+            ' (' +
+            e.rows[0].rank +
+            '位)' +
+            '<br>';
           return description;
         });
         new mapboxgl.Popup()
@@ -208,9 +320,6 @@ export default {
       });
     },
     paintPointLayer(layer) {
-      // 使用済みカラーはactive=trueとして同じ色を使わないようにする
-      const availableColor = this.paintColor.find(v => v.active === false);
-      availableColor.active = !availableColor.active;
       this.map.addLayer({
         id: layer.table_name,
         type: 'circle',
@@ -221,7 +330,7 @@ export default {
         paint: {
           'circle-radius': 4,
           'circle-stroke-width': 2,
-          'circle-color': availableColor.color,
+          'circle-color': 'pink',
           'circle-stroke-color': 'white',
           'circle-opacity': 1,
         },
@@ -235,9 +344,6 @@ export default {
       });
       const max_value = Number(attribute[0].max);
       const min_value = Number(attribute[0].min);
-      console.log(min_value);
-      const availableColor = this.paintColor.find(v => v.active === false);
-      availableColor.active = !availableColor.active;
       this.map.addLayer({
         id: is_reverse ? layer.table_name + 'reverse' : layer.table_name,
         type: 'fill',
@@ -258,56 +364,35 @@ export default {
               },
             }
           : {
-              'fill-color': availableColor.color,
+              'fill-color': 'blue',
               'fill-opacity': 1,
             },
       });
-      // ポリゴンはアウトラインをつける
-      this.map.addLayer({
-        id: `${layer.table_name}-outline`,
-        type: 'line',
-        source: layer.table_name,
-        layout: { visibility: 'visible' },
-        paint: {
-          'line-color': '#000',
-          'line-width': 0.1,
-        },
-      });
     },
     // レイヤーの表示・非表示
-    changeLayerVisibility(clickedLayer) {
+    changeLayerVisibility(clickedLayer, isReverse) {
       const visibility = this.map.getLayoutProperty(
-        clickedLayer.table_name,
+        isReverse
+          ? clickedLayer.table_name + 'reverse'
+          : clickedLayer.table_name,
         'visibility'
       );
       if (visibility === 'visible') {
         this.map.setLayoutProperty(
-          clickedLayer.table_name,
+          isReverse
+            ? clickedLayer.table_name + 'reverse'
+            : clickedLayer.table_name,
           'visibility',
           'none'
         );
-        // ポリゴンにはアウトラインもついている
-        if (clickedLayer.geom_type === 'polygon') {
-          this.map.setLayoutProperty(
-            `${clickedLayer.table_name}-outline`,
-            'visibility',
-            'none'
-          );
-        }
       } else {
         this.map.setLayoutProperty(
-          clickedLayer.table_name,
+          isReverse
+            ? clickedLayer.table_name + 'reverse'
+            : clickedLayer.table_name,
           'visibility',
           'visible'
         );
-        // ポリゴンにはアウトラインもついている
-        if (clickedLayer.geom_type === 'polygon') {
-          this.map.setLayoutProperty(
-            `${clickedLayer.table_name}-outline`,
-            'visibility',
-            'visible'
-          );
-        }
       }
     },
     // レイヤーの透明度調整
@@ -326,8 +411,49 @@ export default {
         );
       }
     },
-    test(value) {
-      console.log(value);
+    // ランキング表示機能
+    showRanking() {
+      const selectedLayer = this.layers
+        .filter(layer => layer.isSelected === true)
+        .map(layer => layer.title);
+      if (selectedLayer.length > 0) {
+        selectedLayer.push('総合');
+      }
+      this.items = selectedLayer;
+      this.isRanking = true;
+      this.isRankingBtn = false;
+    },
+    hideRanking() {
+      this.isRanking = false;
+      this.isRankingBtn = true;
+    },
+    selectTableData(value) {
+      this.isTable = false;
+      this.isTotalTable = false;
+      if (value === '総合') {
+        const layersTitle = [...this.items];
+        layersTitle.pop();
+        const properties = layersTitle.map(title => {
+          return this.propertyData[title];
+        });
+        this.totalRankingData.forEach(x => {
+          x.rank = 0;
+        });
+        properties.forEach(x =>
+          x.forEach((x, i) => {
+            const rank = x.rank / properties.length;
+            this.totalRankingData[i].rank += rank;
+          })
+        );
+        this.totalRankingData.forEach(x => {
+          x.rank = x.rank.toFixed(1);
+        });
+        this.isTotalTable = true;
+      } else {
+        const property = this.propertyData[value];
+        this.$set(this, 'selectedPropertyData', property);
+        this.isTable = true;
+      }
     },
   },
 };
@@ -337,6 +463,9 @@ export default {
 /* body { margin: 0; padding: 0; } */
 /* #map { position: absolute; top: 0; bottom: 0; width: 100%; } */
 #map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   width: 100%;
   height: 90vh;
 }
@@ -354,5 +483,36 @@ export default {
   box-shadow: 0 1px 2pxrgb (0 0 0/10%);
   padding: 10px 10px 15px;
   pointer-events: auto;
+}
+.map-overlay {
+  font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  position: absolute;
+  width: 300px;
+  bottom: 0;
+  right: 0;
+  padding: 10px;
+  text-align: center;
+}
+
+.map-overlay .map-overlay-inner {
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.map-overlay-inner fieldset:last-child {
+  margin: 0;
+}
+
+.map-overlay-inner select {
+  width: 100%;
+}
+
+.map-overlay-inner button {
+  display: inline-block;
+  color: black;
+  cursor: pointer;
 }
 </style>
