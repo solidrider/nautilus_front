@@ -138,8 +138,7 @@ export default {
         },
         { text: '平均順位', value: 'rank' },
       ],
-      access_token:
-        'pk.eyJ1Ijoiay1vbmlzaGkiLCJhIjoiY2w3cXllangwMGEwMjQwazFiZjBhOW11bSJ9.53Q8b_WN97zEviMsm6DmCQ',
+      access_token: this.$config.TOKEN,
       user: '',
       map: {},
       aichi: {},

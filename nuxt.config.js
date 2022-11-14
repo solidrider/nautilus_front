@@ -85,7 +85,10 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
-  env: {
+  env: {},
+  publicRuntimeConfig: {
     NODE_ENV: process.env.NODE_ENV,
+    TOKEN: process.env.ACCESS_TOKEN,
   },
+  privateRuntimeConfig: {},
 };
