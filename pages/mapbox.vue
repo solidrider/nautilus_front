@@ -45,6 +45,16 @@
       <v-container fluid>
         <div>
           <div id="map"></div>
+          <CalcCorrelation
+            v-show="isShowCalc"
+            :items="items"
+            :property="propertyData"
+            @change-mode="hideCalc"
+          />
+          <v-btn v-show="!isShowCalc" @click="showCalc()">相関係数を計算</v-btn>
+          <v-btn v-show="isRankingBtn" @click="showRanking()"
+            >ランキング表示</v-btn
+          >
           <div class="map-overlay bottom">
             <v-card v-show="isRanking">
               <v-container fluid>
@@ -77,9 +87,6 @@
                 class="elevation-1"
               ></v-data-table>
             </v-card>
-            <v-btn v-show="isRankingBtn" @click="showRanking()"
-              >ランキング表示</v-btn
-            >
             <v-btn v-show="!isRankingBtn" @click="hideRanking()"
               >ランキング非表示</v-btn
             >
@@ -111,20 +118,20 @@ import mapService from '@/services/maps';
 
 export default {
   name: 'MapPage',
-  //   components: {},
   data() {
     return {
       isTable: false,
       isTotalTable: false,
       isRanking: false,
       isRankingBtn: true,
+      isShowCalc: false,
       items: [],
       headers: [
         {
           text: '都道府県',
           align: 'start',
           sortable: true,
-          value: 'name',
+          value: 'pref',
         },
         { text: '順位', value: 'rank' },
         { text: '値', value: 'value' },
@@ -134,7 +141,7 @@ export default {
           text: '都道府県',
           align: 'start',
           sortable: true,
-          value: 'name',
+          value: 'pref',
         },
         { text: '平均順位', value: 'rank' },
       ],
@@ -160,53 +167,53 @@ export default {
       propertyData: {},
       selectedPropertyData: [],
       totalRankingData: [
-        { name: '北海道', rank: 0 },
-        { name: '青森県', rank: 0 },
-        { name: '岩手県', rank: 0 },
-        { name: '宮城県', rank: 0 },
-        { name: '秋田県', rank: 0 },
-        { name: '山形県', rank: 0 },
-        { name: '福島県', rank: 0 },
-        { name: '茨城県', rank: 0 },
-        { name: '栃木県', rank: 0 },
-        { name: '群馬県', rank: 0 },
-        { name: '埼玉県', rank: 0 },
-        { name: '千葉県', rank: 0 },
-        { name: '東京都', rank: 0 },
-        { name: '神奈川県', rank: 0 },
-        { name: '新潟県', rank: 0 },
-        { name: '富山県', rank: 0 },
-        { name: '石川県', rank: 0 },
-        { name: '福井県', rank: 0 },
-        { name: '山梨県', rank: 0 },
-        { name: '長野県', rank: 0 },
-        { name: '岐阜県', rank: 0 },
-        { name: '静岡県', rank: 0 },
-        { name: '愛知県', rank: 0 },
-        { name: '三重県', rank: 0 },
-        { name: '滋賀県', rank: 0 },
-        { name: '京都府', rank: 0 },
-        { name: '大阪府', rank: 0 },
-        { name: '兵庫県', rank: 0 },
-        { name: '奈良県', rank: 0 },
-        { name: '和歌山県', rank: 0 },
-        { name: '鳥取県', rank: 0 },
-        { name: '島根県', rank: 0 },
-        { name: '岡山県', rank: 0 },
-        { name: '広島県', rank: 0 },
-        { name: '山口県', rank: 0 },
-        { name: '徳島県', rank: 0 },
-        { name: '香川県', rank: 0 },
-        { name: '愛媛県', rank: 0 },
-        { name: '高知県', rank: 0 },
-        { name: '福岡県', rank: 0 },
-        { name: '佐賀県', rank: 0 },
-        { name: '長崎県', rank: 0 },
-        { name: '熊本県', rank: 0 },
-        { name: '大分県', rank: 0 },
-        { name: '宮崎県', rank: 0 },
-        { name: '鹿児島県', rank: 0 },
-        { name: '沖縄県', rank: 0 },
+        { pref: '北海道', rank: 0 },
+        { pref: '青森県', rank: 0 },
+        { pref: '岩手県', rank: 0 },
+        { pref: '宮城県', rank: 0 },
+        { pref: '秋田県', rank: 0 },
+        { pref: '山形県', rank: 0 },
+        { pref: '福島県', rank: 0 },
+        { pref: '茨城県', rank: 0 },
+        { pref: '栃木県', rank: 0 },
+        { pref: '群馬県', rank: 0 },
+        { pref: '埼玉県', rank: 0 },
+        { pref: '千葉県', rank: 0 },
+        { pref: '東京都', rank: 0 },
+        { pref: '神奈川県', rank: 0 },
+        { pref: '新潟県', rank: 0 },
+        { pref: '富山県', rank: 0 },
+        { pref: '石川県', rank: 0 },
+        { pref: '福井県', rank: 0 },
+        { pref: '山梨県', rank: 0 },
+        { pref: '長野県', rank: 0 },
+        { pref: '岐阜県', rank: 0 },
+        { pref: '静岡県', rank: 0 },
+        { pref: '愛知県', rank: 0 },
+        { pref: '三重県', rank: 0 },
+        { pref: '滋賀県', rank: 0 },
+        { pref: '京都府', rank: 0 },
+        { pref: '大阪府', rank: 0 },
+        { pref: '兵庫県', rank: 0 },
+        { pref: '奈良県', rank: 0 },
+        { pref: '和歌山県', rank: 0 },
+        { pref: '鳥取県', rank: 0 },
+        { pref: '島根県', rank: 0 },
+        { pref: '岡山県', rank: 0 },
+        { pref: '広島県', rank: 0 },
+        { pref: '山口県', rank: 0 },
+        { pref: '徳島県', rank: 0 },
+        { pref: '香川県', rank: 0 },
+        { pref: '愛媛県', rank: 0 },
+        { pref: '高知県', rank: 0 },
+        { pref: '福岡県', rank: 0 },
+        { pref: '佐賀県', rank: 0 },
+        { pref: '長崎県', rank: 0 },
+        { pref: '熊本県', rank: 0 },
+        { pref: '大分県', rank: 0 },
+        { pref: '宮崎県', rank: 0 },
+        { pref: '鹿児島県', rank: 0 },
+        { pref: '沖縄県', rank: 0 },
       ],
     };
   },
@@ -304,7 +311,7 @@ export default {
     },
     async getGeoJsonData(req) {
       const res = await mapService.getGeoJsonData({ name: req });
-      return res[0].json_build_object;
+      return res;
     },
     async getLayersList() {
       const res = await mapService.getLayersList();
@@ -425,6 +432,16 @@ export default {
     hideRanking() {
       this.isRanking = false;
       this.isRankingBtn = true;
+    },
+    showCalc() {
+      const selectedLayer = this.layers
+        .filter(layer => layer.isSelected === true)
+        .map(layer => layer.title);
+      this.items = selectedLayer;
+      this.isShowCalc = true;
+    },
+    hideCalc() {
+      this.isShowCalc = false;
     },
     selectTableData(value) {
       this.isTable = false;
